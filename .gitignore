@@ -1,0 +1,68 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+credentials*.json
+secrets*.json
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Build and packaging artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Generated reports and local datasets
+reports/
+report.html
+*.csv
+*.xlsx
+*.xls
+
+# Confidential product database
+tests/fixtures/marketplace_listings.json
+
+# Vector indexes, model/data artifacts, local databases
+*.faiss
+*.index
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.joblib
+*.sqlite
+*.sqlite3
+
+# IDE/editor and OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Local assistant/tooling state
+.claude/
+CLAUDE.md
