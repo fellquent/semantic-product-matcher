@@ -35,3 +35,8 @@ semantic-product-matcher = "semantic_product_matcher.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Integration tests download/run the real embedding model; opt in with `-m integration`.
+addopts = "-m 'not integration'"
+markers = ["integration: needs the real embedding model (slow, downloads a few GB on first run)"]
