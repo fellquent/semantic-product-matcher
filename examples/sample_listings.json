@@ -1,0 +1,12 @@
+[
+  {"id": "1", "text": "Samsung 990 PRO 2TB PCIe 4.0 NVMe M.2 Internal SSD", "metadata": {"price": 169.99}},
+  {"id": "2", "text": "Samsung 990 Pro 2000 GB M.2 2280 NVMe solid state drive", "metadata": {"price": 172.50}},
+  {"id": "3", "text": "Samsung 990 PRO with Heatsink 2TB NVMe SSD, PS5 compatible", "metadata": {"price": 189.00}},
+  {"id": "4", "text": "Samsung 990 PRO 1TB PCIe 4.0 NVMe M.2 Internal SSD", "metadata": {"price": 99.99}},
+  {"id": "5", "text": "Samsung 990 PRO 4TB NVMe M.2 SSD, up to 7450 MB/s", "metadata": {"price": 319.00}},
+  {"id": "6", "text": "Samsung 870 EVO 2TB SATA III 2.5\" Internal SSD", "metadata": {"price": 139.99}},
+  {"id": "7", "text": "Samsung T7 Shield 2TB Portable SSD, USB 3.2 Gen 2", "metadata": {"price": 149.99}},
+  {"id": "8", "text": "WD_BLACK SN850X 2TB NVMe M.2 2280 PCIe Gen4 SSD", "metadata": {"price": 159.99}},
+  {"id": "9", "text": "Samsung 990 PRO NVMe M.2 SSD, PCIe 4.0, up to 7450 MB/s", "metadata": {"price": 129.00}},
+  {"id": "10", "text": "Logitech MX Master 3S wireless performance mouse", "metadata": {"price": 99.99}}
+]
