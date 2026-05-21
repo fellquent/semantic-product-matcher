@@ -1,0 +1,42 @@
+[
+  {
+    "id": "1",
+    "text": "Бензиновий генератор Honda EU70is, 10 кВт, інверторний, тихий",
+    "metadata": {"brand": "Honda", "power_kw": 10, "fuel": "gasoline"}
+  },
+  {
+    "id": "2",
+    "text": "Honda gasoline generator 10 kW, model EU70is, inverter type",
+    "metadata": {"brand": "Honda", "power_kw": 10, "fuel": "gasoline"}
+  },
+  {
+    "id": "3",
+    "text": "Генератор бензиновий Honda EU70is, потужність 10000 Вт, запуск електричний",
+    "metadata": {"brand": "Honda", "power_kw": 10, "fuel": "gasoline"}
+  },
+  {
+    "id": "4",
+    "text": "Бензиновий генератор Honda EU100i, 15 кВт, промисловий",
+    "metadata": {"brand": "Honda", "power_kw": 15, "fuel": "gasoline"}
+  },
+  {
+    "id": "5",
+    "text": "Дизельний генератор Honda 10 кВт, модель ED10000, водяне охолодження",
+    "metadata": {"brand": "Honda", "power_kw": 10, "fuel": "diesel"}
+  },
+  {
+    "id": "6",
+    "text": "Генератор бензиновий Bosch 10 кВт, модель PowerMax 10000",
+    "metadata": {"brand": "Bosch", "power_kw": 10, "fuel": "gasoline"}
+  },
+  {
+    "id": "7",
+    "text": "Дриль акумуляторна Bosch GSR 18V-50, 18В, безщіткова",
+    "metadata": {"brand": "Bosch", "type": "drill"}
+  },
+  {
+    "id": "8",
+    "text": "Генератор Honda, бензиновий, для дому та дачі, портативний",
+    "metadata": {"brand": "Honda", "fuel": "gasoline"}
+  }
+]
