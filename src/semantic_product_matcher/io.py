@@ -11,7 +11,27 @@ from .models import Listing, MatchResult
 
 
 def load_listings(path: str | Path) -> list[Listing]:
-    """Listings from a JSON file: a list of {"id": ..., "text": ..., "metadata": {...}} objects."""
+    """Listings from JSON or CSV.
+
+    JSON: a list of {"id": ..., "text": ..., "metadata": {...}} objects.
+    CSV: a `text` column (required) and an optional `id` column; every other
+    column goes into metadata. Rows without an id are numbered from 1.
+    """
+    path = Path(path)
+    if path.suffix.lower() == ".csv":
+        with open(path, newline="", encoding="utf-8-sig") as f:
+            rows = list(csv.DictReader(f))
+        if rows and "text" not in rows[0]:
+            raise ValueError(f"{path}: CSV needs a 'text' column, got {list(rows[0])}")
+        return [
+            Listing(
+                id=str(row.get("id") or n),
+                text=row["text"],
+                metadata={k: v for k, v in row.items() if k not in ("id", "text")},
+            )
+            for n, row in enumerate(rows, 1)
+            if (row.get("text") or "").strip()
+        ]
     with open(path, encoding="utf-8-sig") as f:
         return [Listing(**item) for item in json.load(f)]
 

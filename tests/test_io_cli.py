@@ -14,6 +14,23 @@ def test_load_json(tmp_path):
     assert (listing.id, listing.text, listing.metadata) == ("a", "Samsung 990 PRO 2TB", {"brand": "Samsung"})
 
 
+def test_load_csv_extra_columns_become_metadata(tmp_path):
+    p = tmp_path / "l.csv"
+    p.write_text("text,price\nSamsung 990 PRO 2TB NVMe,169\n,1\nLogitech MX Master 3S,99\n", encoding="utf-8-sig")
+    listings = load_listings(p)
+    assert [(l.id, l.text, l.metadata) for l in listings] == [
+        ("1", "Samsung 990 PRO 2TB NVMe", {"price": "169"}),
+        ("3", "Logitech MX Master 3S", {"price": "99"}),
+    ]
+
+
+def test_csv_without_text_column_is_rejected(tmp_path):
+    p = tmp_path / "l.csv"
+    p.write_text("name\nSamsung\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="text"):
+        load_listings(p)
+
+
 def test_report_round_trip(tmp_path):
     r = MatchResult(listing_id="1", listing_text="Samsung 990 PRO 2TB", match=True, confidence=0.9, reason="ok",
                     matched_specs=["capacity"], embedding_score=0.8)
