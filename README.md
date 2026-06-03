@@ -5,7 +5,7 @@ A hybrid semantic product matching system that compares marketplace listings aga
 ## How It Works
 
 ```
-Query: "бензиновий генератор Honda 10 кВт"
+Query: "Honda gasoline generator 10 kW"
 
      ┌─────────────────────────────────┐
      │  Stage 1: Embedding Retrieval   │
@@ -50,7 +50,7 @@ ANTHROPIC_API_KEY=your_anthropic_api_key_here
 Run with a query:
 
 ```bash
-python -m src.cli "бензиновий генератор Honda 10 кВт"
+python -m src.cli "Honda gasoline generator 10 kW"
 ```
 
 Or use the default demo query:
@@ -62,17 +62,17 @@ python -m src.cli
 ### Sample Output
 
 ```
-Query: бензиновий генератор Honda 10 кВт
+Query: Honda gasoline generator 10 kW
 
                     Match Results
 ┌───┬───────┬────────────┬──────────────────────────┬──────────────────────┐
 │ # │ Match │ Confidence │ Listing                  │ Reason               │
 ├───┼───────┼────────────┼──────────────────────────┼──────────────────────┤
-│ 1 │ ✅    │       95%  │ Бензиновий генератор     │ Exact match: Honda,  │
-│   │       │            │ Honda EU70is, 10 кВт...  │ 10 kW, gasoline      │
+│ 1 │ ✅    │       95%  │ Honda gasoline generator │ Exact match: Honda,  │
+│   │       │            │ 10 kW, model EU70is...   │ 10 kW, gasoline      │
 ├───┼───────┼────────────┼──────────────────────────┼──────────────────────┤
-│ 2 │ ✅    │       93%  │ Honda gasoline generator  │ Same product in      │
-│   │       │            │ 10 kW, model EU70is...   │ English, specs match │
+│ 2 │ ✅    │       93%  │ Honda EU70is 10 kW       │ Same product, specs  │
+│   │       │            │ inverter generator...    │ match exactly        │
 └───┴───────┴────────────┴──────────────────────────┴──────────────────────┘
 
 Time: 4.2s | API calls: 5
