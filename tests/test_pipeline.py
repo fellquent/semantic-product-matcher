@@ -42,6 +42,10 @@ def test_only_candidates_above_threshold_reach_the_verifier(ssd_listings, config
     results = matcher.search("Samsung 990 PRO NVMe SSD 2 TB")
     assert [lid for lid, _, _ in verifier.seen] == ["1", "3"]
     assert [r.listing_id for r in results] == ["1"]
+    d = matcher.debug
+    assert (d.total_listings, d.scored, d.above_threshold) == (5, 3, 2)
+    assert d.below_threshold == [("Logitech MX Master 3S wireless mouse", 0.30)]
+    assert [r.listing_id for r in d.llm_rejected] == ["3"]
 
 
 def test_results_sorted_by_confidence(ssd_listings, config):

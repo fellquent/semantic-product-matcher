@@ -4,7 +4,7 @@ from .config import MatcherConfig
 from .embedder import EmbeddingRetriever, sentence_transformer_encoder
 from .io import load_listings, write_report
 from .models import Listing, MatchResult
-from .pipeline import HybridMatcher
+from .pipeline import HybridMatcher, SearchDebugInfo
 from .verifier import ClaudeVerifier, Verifier
 
 __version__ = "0.1.0"
@@ -16,6 +16,7 @@ __all__ = [
     "Listing",
     "MatchResult",
     "MatcherConfig",
+    "SearchDebugInfo",
     "Verifier",
     "load_listings",
     "sentence_transformer_encoder",
