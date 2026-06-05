@@ -44,6 +44,9 @@ report.html
 # Confidential product database
 tests/fixtures/marketplace_listings.json
 
+# Parser screenshots
+screenshots/
+
 # Vector indexes, model/data artifacts, local databases
 *.faiss
 *.index

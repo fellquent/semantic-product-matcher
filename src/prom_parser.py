@@ -1,0 +1,132 @@
+from __future__ import annotations
+
+import json
+import time
+from pathlib import Path
+from urllib.parse import quote
+
+from playwright.sync_api import sync_playwright
+
+from src.models import Listing
+
+PROM_SEARCH_URL = "https://prom.ua/ua/search?search_term={query}&page={page}"
+LISTINGS_PATH = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "marketplace_listings.json"
+SCREENSHOTS_DIR = Path(__file__).resolve().parent.parent / "screenshots"
+
+
+def _extract_items(page, query: str) -> list[dict]:
+    """Extract product names from JSON-LD schema inside product cards."""
+    import json as _json
+
+    raw = page.evaluate("""
+        () => {
+            const results = [];
+            for (const block of document.querySelectorAll('[data-qaid="product_block"]')) {
+                const script = block.querySelector('script[type="application/ld+json"]');
+                const link = block.querySelector('a[data-qaid="product_link"]');
+                if (!script || !link) continue;
+                try {
+                    const data = JSON.parse(script.textContent);
+                    const name = data.name || '';
+                    const href = link.href;
+                    if (name.length > 5) {
+                        results.push({ text: name, href });
+                    }
+                } catch(e) {}
+            }
+            return results;
+        }
+    """)
+
+    return raw
+
+
+def search_prom(query: str, max_pages: int = 3) -> list[Listing]:
+    """Fetch product listings from prom.ua for the given search query."""
+    listings: list[Listing] = []
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            locale="uk-UA",
+        )
+        page = context.new_page()
+
+        for page_num in range(1, max_pages + 1):
+            url = PROM_SEARCH_URL.format(query=quote(query), page=page_num)
+
+            for attempt in range(3):
+                try:
+                    page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                    break
+                except Exception:
+                    if attempt == 2:
+                        print(f"Page {page_num}: failed to load, skipping.")
+                        continue
+                    page.wait_for_timeout(2000)
+
+            page.wait_for_timeout(2000)
+
+            # Scroll to trigger lazy loading of all products
+            for _ in range(8):
+                page.evaluate("window.scrollBy(0, 800)")
+                page.wait_for_timeout(400)
+            page.wait_for_timeout(1000)
+
+            items = _extract_items(page, query)
+
+            SCREENSHOTS_DIR.mkdir(exist_ok=True)
+            screenshot_path = SCREENSHOTS_DIR / f"page_{page_num}.png"
+            page.screenshot(path=str(screenshot_path), full_page=True)
+            print(f"Screenshot saved: {screenshot_path}")
+
+            if not items:
+                print(f"Page {page_num}: no products found, stopping.")
+                break
+
+            for item in items:
+                listing_id = f"prom_{len(listings) + 1}"
+                listings.append(Listing(
+                    id=listing_id,
+                    text=item["text"],
+                    metadata={"source": "prom.ua", "url": item["href"]},
+                ))
+
+            print(f"Page {page_num}: fetched {len(items)} products (total: {len(listings)})")
+            time.sleep(1)
+
+        browser.close()
+
+    return listings
+
+
+def fetch_and_save(query: str, max_pages: int = 3, output_path: Path | None = None) -> list[Listing]:
+    """Search prom.ua, save results to JSON, return listings."""
+    output_path = output_path or LISTINGS_PATH
+    print(f"Searching prom.ua for: {query!r} ({max_pages} pages)...")
+
+    listings = search_prom(query, max_pages=max_pages)
+
+    if not listings:
+        print("No products found.")
+        return []
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    data = [{"id": l.id, "text": l.text, "metadata": l.metadata} for l in listings]
+    with open(output_path, "w", encoding="utf-8-sig") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    print(f"Saved {len(listings)} products to {output_path}")
+    return listings
+
+
+if __name__ == "__main__":
+    import sys
+    query = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "генератор 10 кВт"
+    listings = fetch_and_save(query, max_pages=3)
+    print(f"\nFound {len(listings)} products:\n")
+    for l in listings:
+        print(f"[{l.id}] {l.text}")
+        print(f"      {l.metadata.get('url', '')}")
+        print()

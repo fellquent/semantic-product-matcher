@@ -47,16 +47,42 @@ ANTHROPIC_API_KEY=your_anthropic_api_key_here
 
 ## Usage
 
-Run with a query:
+### Search against a local database (Excel/JSON)
 
 ```bash
+# Search using local product database (tests/fixtures/marketplace_listings.json)
 python -m src.cli "Honda gasoline generator 10 kW"
+
+# Run with default demo query
+python -m src.cli
+
+# Show detailed analysis: which products were filtered at each stage
+python -m src.cli --verbose "Honda gasoline generator 10 kW"
 ```
 
-Or use the default demo query:
+### Search with live Prom.ua scraping
 
 ```bash
-python -m src.cli
+# Scrape Prom.ua for the query, then run matching on results
+python -m src.cli --prom "інвертор Deye 6 кВт"
+
+# Scrape + verbose analysis
+python -m src.cli --prom --verbose "інвертор Deye 6 кВт"
+```
+
+### Scrape Prom.ua only (no matching)
+
+```bash
+# Fetch products from Prom.ua and save to marketplace_listings.json
+# Also saves screenshots of each page to screenshots/
+python -m src.prom_parser "генератор 10 кВт"
+```
+
+### Load your own Excel database
+
+```bash
+# Convert test_data.xlsx (column A = product names) to JSON
+python load_excel_to_json.py
 ```
 
 ### Sample Output
