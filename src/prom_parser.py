@@ -15,9 +15,7 @@ SCREENSHOTS_DIR = Path(__file__).resolve().parent.parent / "screenshots"
 
 
 def _extract_items(page, query: str) -> list[dict]:
-    """Extract product names from JSON-LD schema inside product cards."""
-    import json as _json
-
+    """Extract product data from JSON-LD schema inside product cards."""
     raw = page.evaluate("""
         () => {
             const results = [];
@@ -28,10 +26,32 @@ def _extract_items(page, query: str) -> list[dict]:
                 try {
                     const data = JSON.parse(script.textContent);
                     const name = data.name || '';
-                    const href = link.href;
-                    if (name.length > 5) {
-                        results.push({ text: name, href });
-                    }
+                    if (name.length < 5) continue;
+
+                    const offers = data.offers || {};
+                    const seller = offers.seller || {};
+
+                    // Extract sales count from DOM (not in JSON-LD)
+                    const salesEl = block.querySelector('[data-qaid="product_sales_count"]');
+                    const sales = salesEl ? salesEl.innerText.trim() : '';
+
+                    // Extract article/SKU from DOM
+                    const skuEl = block.querySelector('[data-qaid="product_code"]');
+                    const sku = skuEl ? skuEl.innerText.replace(/[^0-9a-zA-Zа-яА-Я\-]/g, '').trim() : (data.sku || '');
+
+                    // CompanyID from product URL or data attribute
+                    const companyId = block.getAttribute('data-company-id') || '';
+
+                    results.push({
+                        text: name,
+                        href: link.href,
+                        shop_name: seller.name || '',
+                        company_id: companyId,
+                        price: offers.price || '',
+                        availability: offers.availability || '',
+                        sku: sku,
+                        sales: sales,
+                    });
                 } catch(e) {}
             }
             return results;
@@ -90,7 +110,16 @@ def search_prom(query: str, max_pages: int = 3) -> list[Listing]:
                 listings.append(Listing(
                     id=listing_id,
                     text=item["text"],
-                    metadata={"source": "prom.ua", "url": item["href"]},
+                    metadata={
+                        "source": "prom.ua",
+                        "url": item["href"],
+                        "shop_name": item.get("shop_name", ""),
+                        "company_id": item.get("company_id", ""),
+                        "price": item.get("price", ""),
+                        "availability": item.get("availability", ""),
+                        "sku": item.get("sku", ""),
+                        "sales": item.get("sales", ""),
+                    },
                 ))
 
             print(f"Page {page_num}: fetched {len(items)} products (total: {len(listings)})")

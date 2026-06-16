@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     embedding_dim: int = 1024
     similarity_threshold: float = 0.55
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 settings = Settings()
