@@ -42,13 +42,46 @@ def _extract_items(page, query: str) -> list[dict]:
                     // CompanyID from product URL or data attribute
                     const companyId = block.getAttribute('data-company-id') || '';
 
+                    // Shop name: prefer JSON-LD seller, fallback to DOM
+                    let shopName = seller.name || '';
+                    if (!shopName) {
+                        const shopEl = block.querySelector('[data-qaid="company_name"]') ||
+                                       block.querySelector('[data-qaid="shop_name"]') ||
+                                       block.querySelector('a[data-qaid="company_link"]');
+                        shopName = shopEl ? shopEl.innerText.trim() : '';
+                    }
+
+                    // Price: prefer JSON-LD, fallback to DOM
+                    let price = offers.price || '';
+                    if (!price) {
+                        const priceEl = block.querySelector('[data-qaid="product_price"]') ||
+                                        block.querySelector('[class*="price"]');
+                        if (priceEl) {
+                            const priceText = priceEl.innerText.replace(/[^\d.,]/g, '').trim();
+                            if (priceText) price = priceText;
+                        }
+                    }
+
+                    // Availability: prefer JSON-LD, fallback to DOM text
+                    let availability = offers.availability || '';
+                    if (!availability) {
+                        const availEl = block.querySelector('[data-qaid="product_presence"]') ||
+                                        block.querySelector('[data-qaid="availability"]');
+                        if (availEl) {
+                            const txt = availEl.innerText.trim().toLowerCase();
+                            if (txt.includes('наявн')) availability = 'InStock';
+                            else if (txt.includes('немає') || txt.includes('відсутн')) availability = 'OutOfStock';
+                            else availability = availEl.innerText.trim();
+                        }
+                    }
+
                     results.push({
                         text: name,
                         href: link.href,
-                        shop_name: seller.name || '',
+                        shop_name: shopName,
                         company_id: companyId,
-                        price: offers.price || '',
-                        availability: offers.availability || '',
+                        price: price,
+                        availability: availability,
                         sku: sku,
                         sales: sales,
                     });

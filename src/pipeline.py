@@ -37,10 +37,9 @@ class HybridMatcher:
         self.debug.above_threshold = len(above)
         self.debug.below_threshold = [(self.listings[idx].text, score) for idx, score in below]
 
-        skipped = above[settings.llm_top_k:]
-        candidates = above[:settings.llm_top_k]
+        candidates = above
         self.debug.sent_to_llm = len(candidates)
-        self.debug.skipped_llm_cap = [(self.listings[idx].text, score) for idx, score in skipped]
+        self.debug.skipped_llm_cap = []
 
         results: list[MatchResult] = []
         for idx, score in candidates:
