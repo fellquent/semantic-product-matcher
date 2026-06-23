@@ -20,6 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("query", help='what to look for, e.g. "Samsung 990 PRO NVMe SSD 2 TB"')
     p.add_argument("-l", "--listings", required=True, help="listings file: .json or .csv (see README)")
+    p.add_argument("-t", "--threshold", type=float, help="similarity threshold (default: SIMILARITY_THRESHOLD or 0.55)")
     p.add_argument("-r", "--report", help="also write the results to this CSV file")
     p.add_argument("-v", "--verbose", action="store_true", help="show what each stage filtered out")
     return p
@@ -36,7 +37,7 @@ def main(argv: list[str] | None = None) -> None:
 
     start = time.time()
     matcher = HybridMatcher(listings, config)
-    results = matcher.search(args.query)
+    results = matcher.search(args.query, similarity_threshold=args.threshold)
     elapsed = time.time() - start
 
     if results:
@@ -52,7 +53,7 @@ def main(argv: list[str] | None = None) -> None:
         console.print("[yellow]No matches found.[/yellow]")
 
     if args.verbose:
-        _print_debug(console, matcher, config.similarity_threshold)
+        _print_debug(console, matcher, args.threshold if args.threshold is not None else config.similarity_threshold)
 
     console.print(
         f"[dim]Time: {elapsed:.1f}s | API calls: {matcher.api_calls} | "

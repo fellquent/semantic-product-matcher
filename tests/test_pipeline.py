@@ -55,6 +55,14 @@ def test_results_sorted_by_confidence(ssd_listings, config):
     assert [r.listing_id for r in matcher.search("q")] == ["2", "5", "1"]
 
 
+def test_threshold_override(ssd_listings, config):
+    verifier = RecordingVerifier(accept={})
+    matcher = HybridMatcher(ssd_listings, config,
+                            retriever=FixedRetriever([(0, 0.9), (1, 0.6)]), verifier=verifier)
+    matcher.search("q", similarity_threshold=0.7)
+    assert [lid for lid, _, _ in verifier.seen] == ["1"]
+
+
 def test_end_to_end_with_real_index(ssd_listings, config):
     verifier = RecordingVerifier(accept={"1": 0.9})
     matcher = HybridMatcher(ssd_listings, config,

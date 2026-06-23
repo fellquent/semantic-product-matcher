@@ -45,9 +45,9 @@ class HybridMatcher:
         self.verifier = verifier or ClaudeVerifier(self.config)
         self.debug = SearchDebugInfo()
 
-    def search(self, query: str) -> list[MatchResult]:
+    def search(self, query: str, similarity_threshold: float | None = None) -> list[MatchResult]:
         """Listings the verifier accepted, highest confidence first."""
-        threshold = self.config.similarity_threshold
+        threshold = self.config.similarity_threshold if similarity_threshold is None else similarity_threshold
         self.debug = debug = SearchDebugInfo(total_listings=len(self.listings))
 
         start = time.time()
