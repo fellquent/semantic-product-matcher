@@ -26,14 +26,15 @@ class HybridMatcher:
         self.verifier = LLMVerifier()
         self.debug: SearchDebugInfo = SearchDebugInfo()
 
-    def search(self, query: str) -> list[MatchResult]:
+    def search(self, query: str, similarity_threshold: float | None = None) -> list[MatchResult]:
         self.debug = SearchDebugInfo(total_listings=len(self.listings))
+        threshold = similarity_threshold if similarity_threshold is not None else settings.similarity_threshold
 
         all_candidates = self.retriever.retrieve(query, k=settings.faiss_top_k)
         self.debug.faiss_retrieved = len(all_candidates)
 
-        above = [(idx, score) for idx, score in all_candidates if score >= settings.similarity_threshold]
-        below = [(idx, score) for idx, score in all_candidates if score < settings.similarity_threshold]
+        above = [(idx, score) for idx, score in all_candidates if score >= threshold]
+        below = [(idx, score) for idx, score in all_candidates if score < threshold]
         self.debug.above_threshold = len(above)
         self.debug.below_threshold = [(self.listings[idx].text, score) for idx, score in below]
 
