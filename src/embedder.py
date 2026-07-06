@@ -4,8 +4,8 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-from src.config import settings
-from src.models import Listing
+from .config import settings
+from .models import Listing
 
 
 _model: SentenceTransformer | None = None

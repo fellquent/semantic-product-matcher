@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "semantic-product-matcher"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic",
+    "sentence-transformers",
+    "faiss-cpu",
+    "numpy",
+    "pydantic",
+    "pydantic-settings",
+    "python-dotenv",
+    "rich",
+]
+
+# Installed as the importable package "matcher", backed by this repo's src/
+# folder, so other projects (e.g. prom-rank-tracker) can do
+# `pip install -e /path/to/semantic-product-matcher` and then
+# `from matcher.models import Listing` etc., regardless of what this
+# repo's own folder is named on a given machine.
+[tool.setuptools]
+package-dir = {"matcher" = "src"}
+packages = ["matcher"]

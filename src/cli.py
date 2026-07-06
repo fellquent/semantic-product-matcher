@@ -10,9 +10,9 @@ from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 
-from src.config import settings
-from src.models import Listing
-from src.pipeline import HybridMatcher
+from .config import settings
+from .models import Listing
+from .pipeline import HybridMatcher
 
 DEFAULT_QUERY = "бензиновий генератор Honda 10 кВт"
 
@@ -74,7 +74,7 @@ def main() -> None:
     console.print(f"\n[bold]Query:[/bold] {query}\n")
 
     if use_prom:
-        from src.prom_parser import fetch_and_save
+        from .prom_parser import fetch_and_save
         console.print("[dim]Fetching listings from prom.ua...[/dim]")
         listings = fetch_and_save(query, max_pages=3)
         if not listings:

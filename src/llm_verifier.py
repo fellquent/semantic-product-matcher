@@ -4,8 +4,8 @@ import time
 
 import anthropic
 
-from src.config import settings
-from src.models import MatchResult
+from .config import settings
+from .models import MatchResult
 
 REPORT_MATCH_TOOL = {
     "name": "report_match",

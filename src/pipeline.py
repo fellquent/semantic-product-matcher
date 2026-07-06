@@ -1,10 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 
-from src.config import settings
-from src.embedder import EmbeddingRetriever
-from src.llm_verifier import LLMVerifier
-from src.models import Listing, MatchResult
+from .config import settings
+from .embedder import EmbeddingRetriever
+from .llm_verifier import LLMVerifier
+from .models import Listing, MatchResult
 
 
 @dataclass

@@ -7,7 +7,7 @@ from urllib.parse import quote
 
 from playwright.sync_api import sync_playwright
 
-from src.models import Listing
+from .models import Listing
 
 PROM_SEARCH_URL = "https://prom.ua/ua/search?search_term={query}&page={page}"
 LISTINGS_PATH = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "marketplace_listings.json"
