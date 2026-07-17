@@ -1,4 +1,5 @@
 from __future__ import annotations
+import time
 from dataclasses import dataclass, field
 
 from .config import settings
@@ -17,6 +18,8 @@ class SearchDebugInfo:
     skipped_llm_cap: list[tuple[str, float]] = field(default_factory=list)  # (text, score)
     llm_rejected: list[MatchResult] = field(default_factory=list)
     llm_accepted: list[MatchResult] = field(default_factory=list)
+    embedding_time: float = 0.0
+    llm_time: float = 0.0
 
 
 class HybridMatcher:
@@ -30,7 +33,9 @@ class HybridMatcher:
         self.debug = SearchDebugInfo(total_listings=len(self.listings))
         threshold = similarity_threshold if similarity_threshold is not None else settings.similarity_threshold
 
+        embed_start = time.time()
         all_candidates = self.retriever.retrieve(query, k=settings.faiss_top_k)
+        self.debug.embedding_time = time.time() - embed_start
         self.debug.faiss_retrieved = len(all_candidates)
 
         above = [(idx, score) for idx, score in all_candidates if score >= threshold]
@@ -42,15 +47,13 @@ class HybridMatcher:
         self.debug.sent_to_llm = len(candidates)
         self.debug.skipped_llm_cap = []
 
+        llm_start = time.time()
+        items = [(self.listings[idx].id, self.listings[idx].text, score) for idx, score in candidates]
+        verified = self.verifier.verify_many(query, items)
+        self.debug.llm_time = time.time() - llm_start
+
         results: list[MatchResult] = []
-        for idx, score in candidates:
-            listing = self.listings[idx]
-            result = self.verifier.verify(
-                query=query,
-                listing_id=listing.id,
-                listing_text=listing.text,
-                embedding_score=score,
-            )
+        for result in verified:
             if result.match:
                 results.append(result)
                 self.debug.llm_accepted.append(result)
@@ -59,6 +62,14 @@ class HybridMatcher:
 
         results.sort(key=lambda r: r.confidence, reverse=True)
         return results
+
+    @property
+    def input_tokens(self) -> int:
+        return self.verifier.input_tokens
+
+    @property
+    def output_tokens(self) -> int:
+        return self.verifier.output_tokens
 
     @property
     def api_calls(self) -> int:

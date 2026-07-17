@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 import anthropic
 
@@ -25,7 +27,7 @@ REPORT_MATCH_TOOL = {
             },
             "reason": {
                 "type": "string",
-                "description": "Short explanation of why the listing matches or not.",
+                "description": "Short explanation (in Ukrainian) of why the listing matches or not.",
             },
             "matched_specs": {
                 "type": "array",
@@ -73,6 +75,8 @@ Step 5 — Accept only if ALL required specs match.
   If every spec from Step 1 is satisfied: match = true, confidence between 0.7–1.0 \
   based on how precisely the listing matches (exact wording, additional detail, etc.).
 
+Write the "reason" field in Ukrainian. Keep it short (1-2 sentences).
+
 Always call the report_match tool with your verdict.\
 """
 
@@ -81,6 +85,26 @@ class LLMVerifier:
     def __init__(self) -> None:
         self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
         self.api_calls = 0
+        self.input_tokens = 0
+        self.output_tokens = 0
+        self.total_call_time = 0.0
+        self._lock = threading.Lock()
+
+    def verify_many(
+        self,
+        query: str,
+        items: list[tuple[str, str, float]],
+    ) -> list[MatchResult]:
+        """Verify multiple (listing_id, listing_text, embedding_score) candidates
+        concurrently against the same query. Order of results matches `items`."""
+        if not items:
+            return []
+        with ThreadPoolExecutor(max_workers=settings.llm_concurrency) as executor:
+            futures = [
+                executor.submit(self.verify, query, listing_id, listing_text, embedding_score)
+                for listing_id, listing_text, embedding_score in items
+            ]
+            return [f.result() for f in futures]
 
     def verify(
         self,
@@ -97,8 +121,12 @@ class LLMVerifier:
             "Call the report_match tool with your analysis."
         )
 
+        call_start = time.time()
         tool_input = self._call_with_retry(user_message)
-        self.api_calls += 1
+        call_elapsed = time.time() - call_start
+        with self._lock:
+            self.total_call_time += call_elapsed
+            self.api_calls += 1
 
         import json as _json
 
@@ -124,7 +152,7 @@ class LLMVerifier:
             embedding_score=embedding_score,
         )
 
-    def _call_with_retry(self, user_message: str, max_retries: int = 3) -> dict:
+    def _call_with_retry(self, user_message: str, max_retries: int = 5) -> dict:
         for attempt in range(max_retries):
             try:
                 response = self.client.messages.create(
@@ -135,12 +163,17 @@ class LLMVerifier:
                     tool_choice={"type": "tool", "name": "report_match"},
                     messages=[{"role": "user", "content": user_message}],
                 )
+                with self._lock:
+                    self.input_tokens += response.usage.input_tokens
+                    self.output_tokens += response.usage.output_tokens
                 for block in response.content:
                     if block.type == "tool_use" and block.name == "report_match":
                         return block.input
                 raise ValueError("No report_match tool_use block in response")
             except anthropic.APIStatusError as e:
-                if e.status_code == 529 and attempt < max_retries - 1:
+                # 529 = Anthropic overloaded, 429 = rate limit (more likely now
+                # that verify_many() fires several requests concurrently).
+                if e.status_code in (529, 429) and attempt < max_retries - 1:
                     wait = 2 ** attempt
                     time.sleep(wait)
                     continue

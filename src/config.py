@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     llm_top_k: int = 20
     embedding_dim: int = 1024
     similarity_threshold: float = 0.55
+    llm_concurrency: int = 8   # parallel Anthropic requests during verification
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
