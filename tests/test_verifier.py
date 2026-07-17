@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from semantic_product_matcher import ClaudeVerifier, MatcherConfig
+from semantic_product_matcher.verifier import build_system_prompt
 
 
 def tool_response(verdict, input_tokens=300, output_tokens=80):
@@ -63,6 +64,11 @@ def test_verify_many_keeps_order_and_counts_usage():
     assert [r.listing_id for r in results] == [str(i) for i in range(6)]
     assert (verifier.api_calls, verifier.input_tokens, verifier.output_tokens) == (6, 1800, 480)
     assert verifier.verify_many("q", []) == []
+
+
+def test_reason_language_follows_config():
+    prompt = build_system_prompt(MatcherConfig(_env_file=None, reason_language="German"))
+    assert 'Write the "reason" field in German' in prompt
 
 
 def test_client_uses_sdk_retries_and_env_credentials():

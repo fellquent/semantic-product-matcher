@@ -14,6 +14,9 @@ class MatcherConfig(BaseSettings):
 
     # Stage 1: listings with cosine similarity below this never reach the LLM.
     similarity_threshold: float = 0.55
+    # Language of the verifier's `reason` text.
+    reason_language: str = "English"
 
+    llm_concurrency: int = 8      # parallel verification requests
     max_retries: int = 5          # SDK retries on 429 / 5xx / overloaded / network errors
     max_tokens: int = 512

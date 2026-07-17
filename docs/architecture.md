@@ -15,7 +15,7 @@ query ─┐
              ▼
 ┌────────────────────────────┐
 │ Verifier                   │  verifier.py
-│ one request per candidate  │  checked one by one
+│ one request per candidate  │  run in parallel (llm_concurrency)
 │ structured verdict         │  report_match tool: match, confidence, reason, specs
 └────────────┬───────────────┘
              ▼

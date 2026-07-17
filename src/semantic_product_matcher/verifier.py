@@ -7,6 +7,8 @@ duplicates; the verifier is where such numeric mismatches get rejected.
 from __future__ import annotations
 
 import json
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import Protocol
 
 import anthropic
@@ -81,10 +83,14 @@ Step 5 - Accept only if ALL required specs match.
   Then match = true, with confidence between 0.7 and 1.0 depending on how precisely \
   the listing matches.
 
-Write the "reason" field in English. Keep it short (1-2 sentences).
+Write the "reason" field in {language}. Keep it short (1-2 sentences).
 
 Always call the report_match tool with your verdict.\
 """
+
+
+def build_system_prompt(config: MatcherConfig) -> str:
+    return SYSTEM_PROMPT.format(language=config.reason_language)
 
 
 def _as_list(value) -> list[str]:
@@ -107,14 +113,19 @@ class ClaudeVerifier:
             api_key=self.config.anthropic_api_key or None,
             max_retries=self.config.max_retries,
         )
-        self.system_prompt = SYSTEM_PROMPT
+        self.system_prompt = build_system_prompt(self.config)
         self.api_calls = 0
         self.input_tokens = 0
         self.output_tokens = 0
+        self._lock = threading.Lock()
 
     def verify_many(self, query: str, items: list[Candidate]) -> list[MatchResult]:
-        """Verify candidates one by one, in the order of `items`."""
-        return [self.verify(query, *item) for item in items]
+        """Verify candidates concurrently. Results come back in the order of `items`."""
+        if not items:
+            return []
+        with ThreadPoolExecutor(max_workers=self.config.llm_concurrency) as pool:
+            futures = [pool.submit(self.verify, query, *item) for item in items]
+            return [f.result() for f in futures]
 
     def verify(self, query: str, listing_id: str, listing_text: str, embedding_score: float) -> MatchResult:
         verdict = self._report(
@@ -143,9 +154,10 @@ class ClaudeVerifier:
             tool_choice={"type": "tool", "name": REPORT_MATCH_TOOL["name"]},
             messages=[{"role": "user", "content": user_message}],
         )
-        self.api_calls += 1
-        self.input_tokens += response.usage.input_tokens
-        self.output_tokens += response.usage.output_tokens
+        with self._lock:
+            self.api_calls += 1
+            self.input_tokens += response.usage.input_tokens
+            self.output_tokens += response.usage.output_tokens
         for block in response.content:
             if block.type == "tool_use" and block.name == REPORT_MATCH_TOOL["name"]:
                 return block.input
