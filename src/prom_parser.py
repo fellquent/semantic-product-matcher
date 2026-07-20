@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 import time
 from pathlib import Path
 from urllib.parse import quote
@@ -12,6 +15,25 @@ from .models import Listing
 PROM_SEARCH_URL = "https://prom.ua/ua/search?search_term={query}&page={page}"
 LISTINGS_PATH = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "marketplace_listings.json"
 SCREENSHOTS_DIR = Path(__file__).resolve().parent.parent / "screenshots"
+
+
+def _ensure_chromium_installed() -> None:
+    """Playwright never auto-downloads its browser binary — it deliberately
+    requires a separate `playwright install` step. A frozen .exe user has no
+    Python/pip to run that with, so trigger the one-time download ourselves
+    on first use instead of letting BrowserType.launch() fail."""
+    with sync_playwright() as p:
+        exe_path = p.chromium.executable_path
+    if os.path.exists(exe_path):
+        return
+
+    print("Перше використання: завантажуємо браузер для скрапінгу (одноразово, потрібен інтернет)...")
+    if getattr(sys, "frozen", False):
+        # Re-invoke this same frozen executable with a hidden flag; the main
+        # entry point routes it to playwright's own install routine and exits.
+        subprocess.run([sys.executable, "--playwright-install"], check=True)
+    else:
+        subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
 
 
 def _extract_items(page, query: str) -> list[dict]:
@@ -96,6 +118,7 @@ def _extract_items(page, query: str) -> list[dict]:
 
 def search_prom(query: str, max_pages: int = 3) -> list[Listing]:
     """Fetch product listings from prom.ua for the given search query."""
+    _ensure_chromium_installed()
     listings: list[Listing] = []
 
     with sync_playwright() as p:
