@@ -1,49 +1,21 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import faiss
 import numpy as np
-import onnxruntime as ort
-from transformers import AutoTokenizer
+from sentence_transformers import SentenceTransformer
 
 from .config import settings
 from .models import Listing
 
 
-_ONNX_MODEL_DIR = Path(__file__).resolve().parent.parent / settings.onnx_model_dir
-
-_tokenizer: AutoTokenizer | None = None
-_session: ort.InferenceSession | None = None
+_model: SentenceTransformer | None = None
 
 
-def _get_tokenizer() -> AutoTokenizer:
-    global _tokenizer
-    if _tokenizer is None:
-        _tokenizer = AutoTokenizer.from_pretrained(_ONNX_MODEL_DIR)
-    return _tokenizer
-
-
-def _get_session() -> ort.InferenceSession:
-    global _session
-    if _session is None:
-        _session = ort.InferenceSession(str(_ONNX_MODEL_DIR / "model.onnx"))
-    return _session
-
-
-def _encode(texts: list[str]) -> np.ndarray:
-    tokenizer = _get_tokenizer()
-    session = _get_session()
-
-    tokens = tokenizer(texts, padding=True, truncation=True, return_tensors="np")
-    onnx_inputs = {
-        "input_ids": tokens["input_ids"].astype(np.int64),
-        "attention_mask": tokens["attention_mask"].astype(np.int64),
-    }
-    # Graph outputs [token_embeddings, sentence_embedding]; the latter is
-    # already mean-pooled and L2-normalized by the exported ONNX graph.
-    _, sentence_embedding = session.run(None, onnx_inputs)
-    return sentence_embedding.astype(np.float32)
+def _get_model() -> SentenceTransformer:
+    global _model
+    if _model is None:
+        _model = SentenceTransformer(settings.embedding_model)
+    return _model
 
 
 class EmbeddingRetriever:
@@ -53,7 +25,9 @@ class EmbeddingRetriever:
         self._index = self._build_index()
 
     def _build_index(self) -> faiss.Index:
-        embeddings = _encode(self.texts)
+        model = _get_model()
+        embeddings = model.encode(self.texts, normalize_embeddings=True)
+        embeddings = np.asarray(embeddings, dtype=np.float32)
 
         index = faiss.IndexFlatIP(embeddings.shape[1])
         index.add(embeddings)
@@ -64,7 +38,9 @@ class EmbeddingRetriever:
             k = settings.faiss_top_k
         k = min(k, len(self.listings))
 
-        query_vec = _encode([query])
+        model = _get_model()
+        query_vec = model.encode([query], normalize_embeddings=True)
+        query_vec = np.asarray(query_vec, dtype=np.float32)
 
         distances, indices = self._index.search(query_vec, k)
 
