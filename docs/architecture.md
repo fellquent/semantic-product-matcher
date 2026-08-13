@@ -9,7 +9,7 @@ User Query
 ┌──────────────────────────┐
 │  Stage 1: Embedding      │
 │  BAAI/bge-m3 + FAISS     │
-│  → Top-50 by cosine sim  │
+│  → cosine sim, all rows  │
 │  (fast, ~10ms)           │
 └──────────┬───────────────┘
            │ candidates with score ≥ 0.55
@@ -35,4 +35,5 @@ catches these cases with explicit comparison logic.
 
 - Stage 1 is free (local computation)
 - Stage 2 costs ~$0.001 per listing verified (Claude Haiku 4.5)
-- With top-20 LLM verification: ~$0.02 per search query
+- Every listing scoring ≥ 0.55 goes to the LLM — no candidate cap, so the cost
+  per query scales with how many listings clear the threshold (~$0.02 for 20)

@@ -34,9 +34,9 @@ class EmbeddingRetriever:
         return index
 
     def retrieve(self, query: str, k: int | None = None) -> list[tuple[int, float]]:
-        if k is None:
-            k = settings.faiss_top_k
-        k = min(k, len(self.listings))
+        # k=None means "score every listing" — the similarity threshold is the
+        # only filter, so nothing relevant gets cut off by an arbitrary cap.
+        k = len(self.listings) if k is None else min(k, len(self.listings))
 
         model = _get_model()
         query_vec = model.encode([query], normalize_embeddings=True)

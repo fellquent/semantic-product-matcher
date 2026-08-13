@@ -113,7 +113,7 @@ def main() -> None:
         d = matcher.debug
         console.print(f"\n[bold cyan]── Verbose Debug ──────────────────────────────[/bold cyan]")
         console.print(f"  Total listings:       {d.total_listings}")
-        console.print(f"  FAISS retrieved:      {d.faiss_retrieved}")
+        console.print(f"  FAISS scored:         {d.faiss_retrieved}")
         console.print(f"  Above threshold ({settings.similarity_threshold}): {d.above_threshold}")
         console.print(f"  Sent to LLM:          {d.sent_to_llm}")
         console.print(f"  LLM accepted:         {len(d.llm_accepted)}")
@@ -127,11 +127,6 @@ def main() -> None:
             for text, score in sorted(d.below_threshold, key=lambda x: x[1], reverse=True):
                 below_table.add_row(f"{score:.3f}", text[:90])
             console.print(below_table)
-
-        if d.skipped_llm_cap:
-            console.print(f"\n[yellow]  Відсіяно лімітом LLM ({len(d.skipped_llm_cap)} шт):[/yellow]")
-            for text, score in d.skipped_llm_cap:
-                console.print(f"  [dim]{score:.3f}[/dim]  {text[:90]}")
 
         if d.llm_rejected:
             console.print(f"\n[red]  Відхилено Claude ({len(d.llm_rejected)} шт):[/red]")

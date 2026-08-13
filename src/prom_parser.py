@@ -14,7 +14,13 @@ from .models import Listing
 
 PROM_SEARCH_URL = "https://prom.ua/ua/search?search_term={query}&page={page}"
 LISTINGS_PATH = Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "marketplace_listings.json"
-SCREENSHOTS_DIR = Path(__file__).resolve().parent.parent / "screenshots"
+
+# Debug screenshots go next to whatever launched the program (run.bat does
+# `cd /d "%~dp0"`, so that's the portable folder) — never inside the installed
+# package, which in a portable build lives in venv\Lib\site-packages and has no
+# business holding run output. Set PROM_SCREENSHOTS=0 to skip them entirely.
+SCREENSHOTS_DIR = Path.cwd() / "screenshots"
+SAVE_SCREENSHOTS = os.getenv("PROM_SCREENSHOTS", "1").strip().lower() not in ("0", "false", "no", "ні")
 
 
 def _ensure_chromium_installed() -> None:
@@ -34,6 +40,29 @@ def _ensure_chromium_installed() -> None:
         subprocess.run([sys.executable, "--playwright-install"], check=True)
     else:
         subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
+
+
+def _save_debug_screenshot(page, page_num: int) -> None:
+    """Best-effort debug screenshot — must never abort a scrape.
+
+    By the time this runs the products are already extracted, so a failure here
+    costs nothing but used to raise straight out of search_prom and kill the
+    whole run. full_page=True is the usual culprit: after lazy-loading a search
+    page is tall enough to blow past Chromium's capture limits and come back as
+    "Unable to capture screenshot", so fall back to the viewport when it does.
+    """
+    if not SAVE_SCREENSHOTS:
+        return
+    try:
+        SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
+        path = SCREENSHOTS_DIR / f"page_{page_num}.png"
+        try:
+            page.screenshot(path=str(path), full_page=True)
+        except Exception:
+            page.screenshot(path=str(path))
+        print(f"Screenshot saved: {path}")
+    except Exception as e:
+        print(f"Screenshot skipped for page {page_num}: {type(e).__name__}")
 
 
 def _extract_items(page, query: str) -> list[dict]:
@@ -152,10 +181,7 @@ def search_prom(query: str, max_pages: int = 3) -> list[Listing]:
 
             items = _extract_items(page, query)
 
-            SCREENSHOTS_DIR.mkdir(exist_ok=True)
-            screenshot_path = SCREENSHOTS_DIR / f"page_{page_num}.png"
-            page.screenshot(path=str(screenshot_path), full_page=True)
-            print(f"Screenshot saved: {screenshot_path}")
+            _save_debug_screenshot(page, page_num)
 
             if not items:
                 print(f"Page {page_num}: no products found, stopping.")

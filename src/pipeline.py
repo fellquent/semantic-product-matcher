@@ -15,7 +15,6 @@ class SearchDebugInfo:
     above_threshold: int = 0
     sent_to_llm: int = 0
     below_threshold: list[tuple[str, float]] = field(default_factory=list)  # (text, score)
-    skipped_llm_cap: list[tuple[str, float]] = field(default_factory=list)  # (text, score)
     llm_rejected: list[MatchResult] = field(default_factory=list)
     llm_accepted: list[MatchResult] = field(default_factory=list)
     embedding_time: float = 0.0
@@ -34,7 +33,7 @@ class HybridMatcher:
         threshold = similarity_threshold if similarity_threshold is not None else settings.similarity_threshold
 
         embed_start = time.time()
-        all_candidates = self.retriever.retrieve(query, k=settings.faiss_top_k)
+        all_candidates = self.retriever.retrieve(query)
         self.debug.embedding_time = time.time() - embed_start
         self.debug.faiss_retrieved = len(all_candidates)
 
@@ -45,7 +44,6 @@ class HybridMatcher:
 
         candidates = above
         self.debug.sent_to_llm = len(candidates)
-        self.debug.skipped_llm_cap = []
 
         llm_start = time.time()
         items = [(self.listings[idx].id, self.listings[idx].text, score) for idx, score in candidates]

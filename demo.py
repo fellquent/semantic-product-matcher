@@ -387,13 +387,13 @@ def run_demo(use_mock: bool = False):
     # --- Step 3: Retrieve candidates ---
     console.print("[bold]Step 3:[/bold] Embedding retrieval (Stage 1 — FAISS search)...")
     t0 = time.time()
-    candidates = retriever.retrieve(QUERY, k=settings.faiss_top_k)
+    candidates = retriever.retrieve(QUERY)
     t_search = time.time() - t0
 
     above_threshold = [(i, s) for i, s in candidates if s >= settings.similarity_threshold]
 
     console.print(f"  [dim]Search time: {t_search*1000:.0f}ms[/dim]")
-    console.print(f"  [dim]Top-{settings.faiss_top_k} retrieved, "
+    console.print(f"  [dim]{len(candidates)} scored, "
                   f"{len(above_threshold)} above threshold ({settings.similarity_threshold})[/dim]")
     console.print()
 
@@ -433,7 +433,7 @@ def run_demo(use_mock: bool = False):
     console.print()
 
     # --- Step 4: LLM verification ---
-    llm_candidates = above_threshold[:settings.llm_top_k]
+    llm_candidates = above_threshold
     console.print(f"[bold]Step 4:[/bold] LLM verification (Stage 2 — "
                   f"{'Mock' if use_mock else 'Claude Haiku 4.5'}) "
                   f"on {len(llm_candidates)} candidates...")

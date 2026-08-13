@@ -11,7 +11,7 @@ Query: "Honda gasoline generator 10 kW"
      │  Stage 1: Embedding Retrieval   │
      │  BAAI/bge-m3 + FAISS            │
      │  Fast cosine similarity search  │
-     │  → Top 50 candidates            │
+     │  → all above similarity 0.55    │
      └───────────────┬─────────────────┘
                      │
      ┌───────────────▼─────────────────┐
