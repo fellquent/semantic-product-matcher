@@ -1,6 +1,6 @@
 import pytest
 
-from semantic_product_matcher import EmbeddingRetriever
+from semantic_product_matcher import EmbeddingRetriever, Listing
 from tests.conftest import bag_of_words_encoder
 
 
@@ -28,6 +28,12 @@ def test_k_caps_the_number_of_results(retriever):
 
 def test_no_listings_no_results():
     assert EmbeddingRetriever([], encoder=bag_of_words_encoder).retrieve("anything") == []
+
+
+def test_scores_every_listing_by_default():
+    listings = [Listing(id=str(i), text=f"SSD model {i}") for i in range(80)]
+    retriever = EmbeddingRetriever(listings, encoder=bag_of_words_encoder)
+    assert len(retriever.retrieve("SSD")) == 80
 
 
 @pytest.mark.integration

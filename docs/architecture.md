@@ -6,9 +6,9 @@ query ─┐
 ┌────────────────────────────┐
 │ EmbeddingRetriever         │  embedder.py
 │ encode query, FAISS search │  inner product of L2-normalized vectors = cosine similarity
-│ top 50 by similarity       │  index is built once per HybridMatcher
+│ score every listing        │  index is built once per HybridMatcher
 └────────────┬───────────────┘
-             │ (index, score) for the top 50
+             │ (index, score) for all listings
              ▼
    score ≥ similarity_threshold ?  ── no ──▶ debug.below_threshold
              │ yes
@@ -33,6 +33,12 @@ query ─┐
   each candidate to the Anthropic API with a fixed system prompt and a `report_match` tool whose input schema is the
   verdict. Retries on rate limits, overload and network errors are left to the SDK (`max_retries`).
 - **`HybridMatcher`** wires the two together, applies the threshold and keeps `SearchDebugInfo` for the last search.
+
+## Why no top-k
+
+The retriever scores every listing and the threshold is the only cut. A fixed top-k would silently drop relevant
+listings from large catalogs; a threshold keeps recall independent of catalog size. The price is that the number of
+verification calls depends on how many listings clear the threshold — that is what `similarity_threshold` tunes.
 
 ## Cost
 

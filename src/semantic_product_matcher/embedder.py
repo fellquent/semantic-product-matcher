@@ -55,10 +55,14 @@ class EmbeddingRetriever:
         index.add(vectors)
         return index
 
-    def retrieve(self, query: str, k: int = 50) -> list[tuple[int, float]]:
-        """(listing index, cosine similarity) for the k most similar listings, best first."""
+    def retrieve(self, query: str, k: int | None = None) -> list[tuple[int, float]]:
+        """(listing index, cosine similarity) pairs, best first.
+
+        k=None scores every listing: the similarity threshold is then the only
+        filter, so nothing relevant is cut off by an arbitrary cap.
+        """
         if self._index is None:
             return []
-        k = min(k, len(self.listings))
+        k = len(self.listings) if k is None else min(k, len(self.listings))
         scores, indices = self._index.search(self._vectors([query]), k)
         return [(int(i), float(s)) for i, s in zip(indices[0], scores[0]) if i != -1]
