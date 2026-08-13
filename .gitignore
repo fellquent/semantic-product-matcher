@@ -57,6 +57,7 @@ screenshots/
 *.joblib
 *.sqlite
 *.sqlite3
+onnx_models/
 
 # IDE/editor and OS files
 .idea/
