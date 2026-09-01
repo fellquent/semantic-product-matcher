@@ -23,13 +23,18 @@ SCREENSHOTS_DIR = Path.cwd() / "screenshots"
 SAVE_SCREENSHOTS = os.getenv("PROM_SCREENSHOTS", "1").strip().lower() not in ("0", "false", "no", "ні")
 
 
-def _ensure_chromium_installed() -> None:
+def _ensure_chromium_installed(playwright) -> None:
     """Playwright never auto-downloads its browser binary — it deliberately
     requires a separate `playwright install` step. A frozen .exe user has no
     Python/pip to run that with, so trigger the one-time download ourselves
-    on first use instead of letting BrowserType.launch() fail."""
-    with sync_playwright() as p:
-        exe_path = p.chromium.executable_path
+    on first use instead of letting BrowserType.launch() fail.
+
+    Takes the caller's Playwright instance on purpose. Opening a second
+    sync_playwright() context just to read a path started a whole extra Node
+    driver on every single scrape — wasted memory, and its teardown is what
+    printed "Task was destroyed but it is pending!" before each run.
+    """
+    exe_path = playwright.chromium.executable_path
     if os.path.exists(exe_path):
         return
 
@@ -147,10 +152,10 @@ def _extract_items(page, query: str) -> list[dict]:
 
 def search_prom(query: str, max_pages: int = 3) -> list[Listing]:
     """Fetch product listings from prom.ua for the given search query."""
-    _ensure_chromium_installed()
     listings: list[Listing] = []
 
     with sync_playwright() as p:
+        _ensure_chromium_installed(p)
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
