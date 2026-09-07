@@ -98,6 +98,12 @@ def _extract_items(page, query: str) -> list[dict]:
                     // CompanyID from product URL or data attribute
                     const companyId = block.getAttribute('data-company-id') || '';
 
+                    // Seller rating is right on the card ("99%"). The review
+                    // count is not — that one needs a separate API call, so it
+                    // is left to the caller.
+                    const ratingEl = block.querySelector('[data-qaid="company_rating"]');
+                    const shopRating = ratingEl ? ratingEl.innerText.trim() : '';
+
                     // Shop name: prefer JSON-LD seller, fallback to DOM
                     let shopName = seller.name || '';
                     if (!shopName) {
@@ -140,6 +146,7 @@ def _extract_items(page, query: str) -> list[dict]:
                         availability: availability,
                         sku: sku,
                         sales: sales,
+                        shop_rating: shopRating,
                     });
                 } catch(e) {}
             }
@@ -206,6 +213,7 @@ def search_prom(query: str, max_pages: int = 3) -> list[Listing]:
                         "availability": item.get("availability", ""),
                         "sku": item.get("sku", ""),
                         "sales": item.get("sales", ""),
+                        "shop_rating": item.get("shop_rating", ""),
                     },
                 ))
 

@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../prom-rank-tracker"
+		},
+		{
+			"path": "../prom_parsing"
 		}
 	],
 	"settings": {}
