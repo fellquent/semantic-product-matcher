@@ -75,13 +75,16 @@ def _extract_items(page, query: str) -> list[dict]:
     raw = page.evaluate("""
         () => {
             const results = [];
+            // JSON-LD on the card keeps HTML entities: "&quot;Орбіта&quot;",
+            // "Комп&#39;ютер Ленд". A textarea decodes them the way a page would.
+            const decode = (s) => { const t = document.createElement('textarea'); t.innerHTML = s || ''; return t.value; };
             for (const block of document.querySelectorAll('[data-qaid="product_block"]')) {
                 const script = block.querySelector('script[type="application/ld+json"]');
                 const link = block.querySelector('a[data-qaid="product_link"]');
                 if (!script || !link) continue;
                 try {
                     const data = JSON.parse(script.textContent);
-                    const name = data.name || '';
+                    const name = decode(data.name || '');
                     if (name.length < 5) continue;
 
                     const offers = data.offers || {};
@@ -105,7 +108,7 @@ def _extract_items(page, query: str) -> list[dict]:
                     const shopRating = ratingEl ? ratingEl.innerText.trim() : '';
 
                     // Shop name: prefer JSON-LD seller, fallback to DOM
-                    let shopName = seller.name || '';
+                    let shopName = decode(seller.name || '');
                     if (!shopName) {
                         const shopEl = block.querySelector('[data-qaid="company_name"]') ||
                                        block.querySelector('[data-qaid="shop_name"]') ||
@@ -124,18 +127,18 @@ def _extract_items(page, query: str) -> list[dict]:
                         }
                     }
 
-                    // Availability: prefer JSON-LD, fallback to DOM text
-                    let availability = offers.availability || '';
-                    if (!availability) {
-                        const availEl = block.querySelector('[data-qaid="product_presence"]') ||
-                                        block.querySelector('[data-qaid="availability"]');
-                        if (availEl) {
-                            const txt = availEl.innerText.trim().toLowerCase();
-                            if (txt.includes('наявн')) availability = 'InStock';
-                            else if (txt.includes('немає') || txt.includes('відсутн')) availability = 'OutOfStock';
-                            else availability = availEl.innerText.trim();
-                        }
-                    }
+                    // Availability: the label the card SHOWS ("В наявності",
+                    // "Готово до відправки", "Під замовлення"), as is — the
+                    // caller normalises it. JSON-LD only when the card has no
+                    // label: since 10.2026 Prom leaves offers.availability out
+                    // of about a quarter of the cards, and where it is present
+                    // it says InStock for both "В наявності" and "Готово до
+                    // відправки".
+                    let availability = '';
+                    const availEl = block.querySelector('[data-qaid="product_presence"]') ||
+                                    block.querySelector('[data-qaid="availability"]');
+                    if (availEl) availability = availEl.innerText.trim();
+                    if (!availability) availability = offers.availability || '';
 
                     results.push({
                         text: name,
