@@ -49,6 +49,14 @@ def test_request_forces_the_tool_by_default():
     assert kwargs["tools"][0]["name"] == "report_match"
 
 
+def test_tool_choice_auto_when_forcing_is_off():
+    verifier, client = verifier_with(tool_response({"match": True, "confidence": 0.9, "reason": "ok"}),
+                                     force_tool_choice=False, claude_model="some-other-model")
+    verifier.verify("q", "1", "listing", 0.7)
+    kwargs = client.messages.create.call_args.kwargs
+    assert kwargs["tool_choice"] == {"type": "auto"} and kwargs["model"] == "some-other-model"
+
+
 def test_missing_tool_call_is_an_error():
     text_only = SimpleNamespace(content=[SimpleNamespace(type="text", text="I think so")], stop_reason="end_turn",
                                 usage=SimpleNamespace(input_tokens=10, output_tokens=5))
@@ -66,9 +74,10 @@ def test_verify_many_keeps_order_and_counts_usage():
     assert verifier.verify_many("q", []) == []
 
 
-def test_reason_language_follows_config():
-    prompt = build_system_prompt(MatcherConfig(_env_file=None, reason_language="German"))
-    assert 'Write the "reason" field in German' in prompt
+def test_system_prompt_follows_config():
+    prompt = build_system_prompt(MatcherConfig(_env_file=None, numeric_tolerance=0.1, reason_language="German"))
+    assert "±10%" in prompt and 'Write the "reason" field in German' in prompt
+    assert "±5%" in build_system_prompt(MatcherConfig(_env_file=None))
 
 
 def test_client_uses_sdk_retries_and_env_credentials():

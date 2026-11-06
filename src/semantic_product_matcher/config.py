@@ -14,9 +14,14 @@ class MatcherConfig(BaseSettings):
 
     # Stage 1: listings with cosine similarity below this never reach the LLM.
     similarity_threshold: float = 0.55
+    # Stage 2: relative difference allowed between numeric specs (0.05 = ±5%).
+    numeric_tolerance: float = 0.05
     # Language of the verifier's `reason` text.
     reason_language: str = "English"
 
     llm_concurrency: int = 8      # parallel verification requests
     max_retries: int = 5          # SDK retries on 429 / 5xx / overloaded / network errors
     max_tokens: int = 512
+    # Force the report_match tool call. Set to false for models that reject a forced
+    # tool_choice; the system prompt still tells the model to call the tool.
+    force_tool_choice: bool = True

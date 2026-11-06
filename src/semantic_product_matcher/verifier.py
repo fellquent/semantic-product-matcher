@@ -65,7 +65,7 @@ Step 1 - Extract required specs from the QUERY.
   and any other property explicitly stated.
 
 Step 2 - Check each required spec against the LISTING.
-  - Numeric specs: allowed tolerance ±5%. Unit conversions count as equal \
+  - Numeric specs: allowed tolerance ±{tolerance}%. Unit conversions count as equal \
     (10 kW = 10000 W). Example: 10 kW vs 10.4 kW is within ±5%; 10 kW vs 15 kW is a MISMATCH.
   - Text specs (color, material, brand, fuel type): must match in meaning. \
     Language does not matter - the query and the listing may be in different languages.
@@ -90,7 +90,8 @@ Always call the report_match tool with your verdict.\
 
 
 def build_system_prompt(config: MatcherConfig) -> str:
-    return SYSTEM_PROMPT.format(language=config.reason_language)
+    tolerance = f"{config.numeric_tolerance * 100:g}"
+    return SYSTEM_PROMPT.format(tolerance=tolerance, language=config.reason_language)
 
 
 def _as_list(value) -> list[str]:
@@ -146,12 +147,17 @@ class ClaudeVerifier:
         )
 
     def _report(self, user_message: str) -> dict:
+        tool_choice = (
+            {"type": "tool", "name": REPORT_MATCH_TOOL["name"]}
+            if self.config.force_tool_choice
+            else {"type": "auto"}
+        )
         response = self.client.messages.create(
             model=self.config.claude_model,
             max_tokens=self.config.max_tokens,
             system=self.system_prompt,
             tools=[REPORT_MATCH_TOOL],
-            tool_choice={"type": "tool", "name": REPORT_MATCH_TOOL["name"]},
+            tool_choice=tool_choice,
             messages=[{"role": "user", "content": user_message}],
         )
         with self._lock:

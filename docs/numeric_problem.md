@@ -29,7 +29,7 @@ In product matching the number is often what decides it:
 1. **Embeddings** find everything that is about the same kind of product (high recall). Wrong-capacity listings
    are expected to pass this stage — and to rank near the top.
 2. **The verifier** extracts the specs stated in the query and checks each one explicitly (high precision):
-   - numbers must agree within ±5% after unit conversion:
+   - numbers must agree within `NUMERIC_TOLERANCE` (±5% by default) after unit conversion:
      2 TB = 2000 GB passes, 1 TB and 4 TB fail;
    - a spec the query states but the listing doesn't is a mismatch: "Samsung 990 PRO NVMe SSD" with no capacity
      is rejected for a "2 TB" query, because it cannot be confirmed;
