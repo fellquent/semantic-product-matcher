@@ -37,13 +37,14 @@ Ranking alone can't fix that, so the engine runs two stages:
                    ▼ candidates
   ┌──────────────────────────────────┐
   │ 2. LLM verification               │  one structured call per candidate
-  │    spec-by-spec check             │  numbers within ±5%            
+  │    spec-by-spec check             │  numbers within ±NUMERIC_TOLERANCE (5%)
   └────────────────┬─────────────────┘
                    ▼
        matches, highest confidence first, each with a reason and the specs that matched / didn't
 ```
 
-Stage 1 gives recall cheaply; stage 2 gives precision where it matters.
+Stage 1 gives recall cheaply; stage 2 gives precision where it matters. There is no cap on the number of candidates:
+everything above the threshold is verified, so nothing relevant is cut off by an arbitrary top-k.
 
 ## Install
 
@@ -78,15 +79,17 @@ for r in matcher.search("Samsung 990 PRO NVMe SSD 2 TB"):
     print(f"{r.confidence:.0%}  {r.listing_text}  — {r.reason}")
 ```
 
-`search` returns only accepted listings, highest confidence first.
+`search` returns only accepted listings. `matcher.debug` shows what each stage did: scores below the threshold,
+listings the verifier rejected and why, and the timing of each stage.
 
 ### Command line
 
 ```bash
-semantic-product-matcher "Samsung 990 PRO NVMe SSD 2 TB" --listings examples/sample_listings.json
-semantic-product-matcher "USB-C charger 65 W" -l products.csv --report results.csv
+semantic-product-matcher "Samsung 990 PRO NVMe SSD 2 TB" --listings examples/sample_listings.json --verbose
+semantic-product-matcher "USB-C charger 65 W" -l products.csv --threshold 0.6 --report results.csv
 ```
 
+`--verbose` prints the rejected listings with reasons and the ones that never passed the similarity threshold.
 Every run prints the number of API calls and tokens used.
 
 ### Listings files
@@ -120,11 +123,37 @@ Every setting can be passed in code (`MatcherConfig(similarity_threshold=0.6)`) 
 | `CLAUDE_MODEL` | `claude-haiku-4-5` | model used for verification |
 | `EMBEDDING_MODEL` | `BAAI/bge-m3` | any sentence-transformers model |
 | `SIMILARITY_THRESHOLD` | `0.55` | minimum cosine similarity to reach stage 2 |
+| `NUMERIC_TOLERANCE` | `0.05` | allowed relative difference between numbers |
+| `REASON_LANGUAGE` | `English` | language of the `reason` text |
+| `LLM_CONCURRENCY` | `8` | parallel verification requests |
 | `MAX_RETRIES` | `5` | retries on rate limits, overload and network errors |
+| `FORCE_TOOL_CHOICE` | `true` | force the structured `report_match` call; set `false` for models that reject a forced tool choice (e.g. `claude-opus-5-5`, `claude-sonnet-5-5`) |
+
+**Threshold.** Lower it if relevant listings show up under "below the similarity threshold" in `--verbose`; raise it
+to send fewer candidates to the LLM.
 
 **Cost.** Stage 1 runs locally. Stage 2 makes one request per candidate above the threshold, so cost grows with the
 number of candidates, not with the size of the catalog. The CLI prints input/output tokens for each run; multiply by
 the model's [price](https://docs.anthropic.com/en/docs/about-claude/pricing) to see the cost.
+
+## Extending
+
+Both stages are replaceable:
+
+```python
+from semantic_product_matcher import EmbeddingRetriever, HybridMatcher, MatchResult
+
+def my_encoder(texts):            # list[str] -> (n, dim) array with L2-normalized rows
+    ...
+
+class MyVerifier:                 # anything with verify_many(query, items) -> list[MatchResult]
+    def verify_many(self, query, items):
+        return [MatchResult(listing_id=i, listing_text=t, match=..., confidence=..., reason=...,
+                            embedding_score=score) for i, t, score in items]
+
+matcher = HybridMatcher(listings, retriever=EmbeddingRetriever(listings, encoder=my_encoder),
+                        verifier=MyVerifier())
+```
 
 ## Demo
 
@@ -156,7 +185,7 @@ src/semantic_product_matcher/
 ├── models.py     Listing, MatchResult
 ├── embedder.py   stage 1: embeddings + FAISS index
 ├── verifier.py   stage 2: LLM verification, prompt and output schema
-├── pipeline.py   HybridMatcher: both stages
+├── pipeline.py   HybridMatcher: both stages + debug info
 ├── io.py         listings from JSON/CSV, CSV reports
 └── cli.py        command line
 docs/             design notes
